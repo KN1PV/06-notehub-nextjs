@@ -8,18 +8,25 @@ import NoteList from '@/components/NoteList/NoteList';
 import SearchBox from '@/components/SearchBox/SearchBox';
 import Pagination from '@/components/Pagination/Pagination';
 import NoteModal from '@/components/NoteModal/NoteModal';
-import { fetchNotes } from '@/lib/api';
+import { fetchNotes, NotesResponse } from '@/lib/api';
 
-const NotesClient = () => {
+type NotesClientProps = {
+    initialData: NotesResponse;
+}
+
+const NotesClient = ({ initialData }: NotesClientProps) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [debouncedSearchQuery] = useDebounce(searchQuery, 300);
+
     const { data } = useQuery({
         queryKey: ['notes', debouncedSearchQuery, currentPage],
         queryFn: () => fetchNotes(debouncedSearchQuery || '', currentPage),
         placeholderData: keepPreviousData,
+        initialData: currentPage === 1 && !debouncedSearchQuery ? initialData : undefined
     });
+    
     const handleSearch = (query: string) => {
         setSearchQuery(query);
         setCurrentPage(1);
@@ -31,7 +38,6 @@ const NotesClient = () => {
         setIsModalOpen(false);
     };
 
-    const notes = data?.notes;
     return (
         <div className={css.app}>
             <header className={css.toolbar}>
@@ -47,7 +53,7 @@ const NotesClient = () => {
                     Create note +
                 </button>
             </header>
-            {notes && notes.length > 0 && <NoteList notes={notes} />}
+            {data?.notes && data.notes.length > 0 && <NoteList notes={data.notes} />}
             {isModalOpen && <NoteModal onClose={closeModal} />}
         </div>
     );
